@@ -3,13 +3,18 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-import numpy as np, pandas as pd, datashader as ds
-import datashader
+import numpy as np
+import pandas as pd
+import datashader as ds
 from datashader import transfer_functions as tf
 from datashader.colors import inferno, viridis
 from numba import jit
 from math import sin, cos, sqrt, fabs
 
+from colorcet import palette
+
+##############################################
+# "Front page" and Global content
 st.beta_set_page_config(page_title="Visualizing Attractors")
 
 
@@ -24,22 +29,57 @@ from [L&aacute;zaro Alonso](https://lazarusa.github.io/Webpage/codepython2.html)
 [Jason Rampe](https://softologyblog.wordpress.com/2017/03/04/2d-strange-attractors), [Paul Bourke](http://paulbourke.net/fractals/), 
 and [James A. Bednar](http://github.io/jbednar)."""
 
+"""
+For example, a [Clifford Attractor](http://paulbourke.net/fractals/clifford) is a strange attractor 
+defined by two iterative equations that determine the _x,y_ locations of discrete steps in the path of a 
+particle across a 2D space, given a starting point _(x0,y0)_ and the values of four parameters _(a,b,c,d)_:
+"""
+
+st.latex("x_{n +1} = \sin(a y_{n}) + c \cos(a x_{n})")
+
+st.latex("y_{n +1} = \sin(b x_{n}) + d \cos(b y_{n})")
+
+"""
+At each time step, the equations define the location for the following time step, and the accumulated locations show the areas of the 2D plane most commonly visited by the imaginary particle.  
+"""
+
+"""---"""
+
+##############################################
+
 # sidebar options
 st.sidebar.markdown("Global options")
 n = st.sidebar.number_input("# of obs", 10 ** 6, 10 ** 7, step=10 ** 6)
 plotsize = st.sidebar.number_input("plot size", 500, 700, step=50)
-cmap = st.sidebar.selectbox("color map", ("viridis", "inferno"))
+cmap = st.sidebar.selectbox(
+    "color map",
+    ("bgy", "bmw", "bgyw", "bmy", "fire", "gray", "kgy", "kbc"),
+)
 st.sidebar.markdown("---")
-st.sidebar.markdown("Model parameters")
-a = st.sidebar.number_input("a", -2.0, -1.0, -1.3, step=0.1)
-b = st.sidebar.number_input("b", -2.0, -1.0, -1.3, step=0.1)
-c = st.sidebar.number_input("c", -2.0, -1.0, -1.8, step=0.1)
-d = st.sidebar.number_input("d", -2.0, -1.0, -1.9, step=0.1)
+st.sidebar.markdown("Attractor and parameters")
+st.sidebar.markdown(
+    """_Toggle the choices to see how the attractor changes with different inputs_"""
+)
+fn = st.sidebar.selectbox("Attractor", ["Clifford", "De Jong", "Svensson"])
+a = st.sidebar.number_input("a", -2.0, 2.0, -1.3, step=0.1)
+b = st.sidebar.number_input("b", -2.0, 2.0, -1.3, step=0.1)
+c = st.sidebar.number_input("c", -2.0, 2.0, -1.8, step=0.1)
+d = st.sidebar.number_input("d", -2.0, 2.0, -1.9, step=0.1)
 
 
 @jit(nopython=True)
 def Clifford(x, y, a, b, c, d, *o):
     return sin(a * y) + c * cos(a * x), sin(b * x) + d * cos(b * y)
+
+
+@jit(nopython=True)
+def De_Jong(x, y, a, b, c, d, *o):
+    return sin(a * y) - cos(b * x), sin(c * x) - cos(d * y)
+
+
+@jit(nopython=True)
+def Svensson(x, y, a, b, c, d, *o):
+    return d * sin(a * x) - sin(b * y), c * cos(a * x) + cos(b * y)
 
 
 @jit(nopython=True)
@@ -67,25 +107,32 @@ def dsplot(fn, vals, plotsize=plotsize, n=n, cmap=viridis, label=True):
     return img
 
 
-"""## Clifford Attractors
+if fn == "Clifford":
 
-For example, a [Clifford Attractor](http://paulbourke.net/fractals/clifford) is a strange attractor defined by two iterative equations that determine the _x,y_ locations of discrete steps in the path of a particle across a 2D space, given a starting point _(x0,y0)_ and the values of four parameters _(a,b,c,d)_:
-"""
+    st.markdown("""## Clifford Attractor""")
 
-st.latex(r"""x_{n +1} = \sin(a y_{n}) + c \cos(a x_{n})""")
+    st.latex("x_{n +1} = \sin(%2.1f y_{n}) + %2.1f \cos(%2.1f x_{n})" % (a, c, a))
+    st.latex("y_{n +1} = \sin(%2.1f x_{n}) + %2.1f \cos(%2.1f y_{n})" % (b, d, b))
 
-st.latex(
-    r"""
-y_{n +1} = \sin(b x_{n}) + d \cos(b y_{n})
-"""
-)
+    g = dsplot(Clifford, (0, 0, a, b, c, d), plotsize, cmap=palette[cmap][::-1])
+    components.html(g._repr_html_(), height=plotsize + 10, width=plotsize + 10)
 
-"""
-At each time step, the equations define the location for the following time step, and the accumulated locations show the areas of the 2D plane most commonly visited by the imaginary particle.  
-"""
+elif fn == "De Jong":
 
-g = dsplot(Clifford, (0, 0, a, b, c, d), plotsize, cmap=eval(cmap))
+    st.markdown("""## De Jong Attractor""")
 
-"""### Example"""
-"""_Toggle the choices in the sidebar to see how the attractor changes with different inputs_"""
-components.html(g._repr_html_(), height=plotsize + 10, width=plotsize + 10)
+    st.latex("x_{n +1} = \sin(%2.1f y_{n}) - \cos(%2.1f x_{n})" % (a, b))
+    st.latex("y_{n +1} = \sin(%2.1f x_{n}) - \cos(%2.1f y_{n})" % (c, d))
+
+    dg = dsplot(De_Jong, (0, 0, a, b, c, d), plotsize, cmap=palette[cmap][::-1])
+    components.html(dg._repr_html_(), height=plotsize + 10, width=plotsize + 10)
+
+elif fn == "Svensson":
+
+    st.markdown("""## Svensson Attractor""")
+
+    st.latex("x_{n +1} = %2.1f * \sin(%2.1f x_{n}) - \sin(%2.1f y_{n})" % (d, a, b))
+    st.latex("y_{n +1} = %2.1f * \cos(%2.1f x_{n}) + \cos(%2.1f y_{n})" % (c, a, b))
+
+    sv = dsplot(Svensson, (0, 0, a, b, c, d), plotsize, cmap=palette[cmap][::-1])
+    components.html(sv._repr_html_(), height=plotsize + 10, width=plotsize + 10)
