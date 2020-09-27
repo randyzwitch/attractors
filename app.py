@@ -13,6 +13,8 @@ from math import sin, cos, sqrt, fabs
 
 from colorcet import palette
 
+ds.transfer_functions.Image.border=0
+
 ##############################################
 # "Front page" and Global content
 st.beta_set_page_config(page_title="Visualizing Attractors")
@@ -91,7 +93,7 @@ def trajectory_coords(fn, x0, y0, a, b=0, c=0, d=0, e=0, f=0, n=n):
     return x, y
 
 
-@st.cache
+@st.cache(show_spinner=False)
 def trajectory(fn, x0, y0, a, b=0, c=0, d=0, e=0, f=0, n=n):
     x, y = trajectory_coords(fn, x0, y0, a, b, c, d, e, f, n)
     return pd.DataFrame(dict(x=x, y=y))
