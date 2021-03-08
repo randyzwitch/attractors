@@ -7,7 +7,7 @@ attrs==20.2.0
 backcall==0.2.0
 base58==2.0.1
 black==20.8b1
-bleach==3.2.1
+bleach==3.3.0
 blinker==1.4
 bokeh==2.2.1
 boto3==1.15.5
