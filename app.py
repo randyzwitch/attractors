@@ -17,7 +17,7 @@ ds.transfer_functions.Image.border=0
 
 ##############################################
 # "Front page" and Global content
-st.beta_set_page_config(page_title="Visualizing Attractors")
+st.set_page_config(page_title="Visualizing Attractors")
 
 
 "# Visualizing Attractors"
